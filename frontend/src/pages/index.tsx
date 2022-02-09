@@ -128,6 +128,10 @@ export default function Stake() {
       notify('error', 'You can not buy more today.');
       return;
     }
+    if (amount > poolData.tokenAmount) {
+      notify('error', 'Pool has insufficient funds.');
+      return;
+    }
 
     await axios.post('http://localhost:8000/buy_token', { data: {pubkey: wallet?.publicKey.toBase58(), amount}});
     await refresh();
