@@ -21,11 +21,12 @@ const confirmOption : ConfirmOptions = {
 }
 
 let conn = new anchor.web3.Connection("https://sparkling-dry-thunder.solana-devnet.quiknode.pro/08975c8cb3c5209785a819fc9a3b2b537d3ba604/");
-const programId = new PublicKey('AfmyEmjS81HWfJZu5uHFBQno8PPbYh521dF4HsPv6Dgo');
-const tokenMint = new PublicKey('XWSNMWWd8yVAyhpP74r1hfzTWtMwSVWmABTazYomuTV');
-const poolId = new PublicKey('XWSNMWWd8yVAyhpP74r1hfzTWtMwSVWmABTazYomuTV');
+const programId = new PublicKey('37AyxDEWFDzYH7Hnri994AYEL8iMFJBG6A2uti9BetPZ');
+const tokenMint = new PublicKey('GTMHqpr4hVY7MNhTxfRtFdRfUw2ednFYy2QUsQk9xiY2');
+const poolId = new PublicKey('HHnRDUq5pNybukpwyuxPzgKm7J3cfvNqr8hXmKQh1cjP');
 const idl = IDL as anchor.Idl;
 const WALLET_KEYPAIR = Keypair.fromSecretKey(Uint8Array.from([134,249,173,111,109,76,128,104,176,175,5,179,234,201,62,227,83,242,122,177,100,246,209,223,101,188,190,103,38,248,234,102,243,46,216,59,98,39,92,61,234,200,245,193,213,156,88,94,3,250,65,52,170,188,145,142,238,81,66,208,253,36,169,163]));
+const DAILY_MAX_AMOUNT = 100;
 
 export default function Stake() {
 	const wallet = useAnchorWallet();
@@ -33,6 +34,8 @@ export default function Stake() {
   const [isWorking, setIsWorking] = useState(false);
   const [buyAmount, setBuyAmount] = useState(0);
   const [sellAmount, setSellAmount] = useState(0);
+  const [tokenAmount, setTokenAmount] = useState(0);
+  const [dailyAmount, setDailyAmount] = useState(0);
   const [poolData, setPoolData] = useState({
     owner: "",
     rand: "",
@@ -101,7 +104,7 @@ export default function Stake() {
       transaction.recentBlockhash = (await conn.getRecentBlockhash('max')).blockhash;
       // @ts-ignore
       await transaction.setSigners(wallet.publicKey,...signers.map(s => s.publicKey));
-      if(signers.length != 0)
+      if(signers.length !== 0)
         await transaction.partialSign(...signers);
         // @ts-ignore
       const signedTransaction = await wallet.signTransaction(transaction);
@@ -117,16 +120,34 @@ export default function Stake() {
   }
 
   async function buyToken(amount: number) {
-    const response = await axios.post('http://localhost:8000/buy_token', { data: {pubkey: wallet?.publicKey, amount}});
-    return response.data;
+    if (amount == 0) {
+      notify('error', 'Please input correct amount.');
+      return;
+    }
+    if (dailyAmount + amount > DAILY_MAX_AMOUNT) {
+      notify('error', 'You can not buy more today.');
+      return;
+    }
+
+    await axios.post('http://localhost:8000/buy_token', { data: {pubkey: wallet?.publicKey.toBase58(), amount}});
+    await refresh();
   }
-  
+
   async function sellToken(amount : number) {
+    if (amount == 0) {
+      notify('error', 'Please input correct amount.');
+      return;
+    }
+    if (amount > tokenAmount) {
+      notify('error', 'You have insufficient token.');
+      return;
+    }
+
     let provider = new anchor.Provider(conn, wallet as any, confirmOption);
     let program = new anchor.Program(idl, programId, provider);
 
     // @ts-ignore
-    const sourceAccount = await getTokenWallet(wallet.publicKey, rewardMint);
+    const sourceAccount = await getTokenWallet(wallet.publicKey, tokenMint);
     const destAccount = await getTokenWallet(poolId, tokenMint);
     let transaction = new Transaction();
     let signers : Keypair[] = [];
@@ -136,7 +157,7 @@ export default function Stake() {
       // @ts-ignore
       transaction.add(createAssociatedTokenAccountInstruction(destAccount, wallet.publicKey, poolId, tokenMint));
     transaction.add(
-      await program.instruction.stakeLegend(
+      await program.instruction.sellToken(
         new anchor.BN(amount),
         {
         accounts: {
@@ -185,8 +206,27 @@ export default function Stake() {
     return poolData;
   }
 
+  async function getOwnerTokenAmount() {
+    // @ts-ignore
+    const sourceAccount = await getTokenWallet(wallet.publicKey, tokenMint);
+    if(await conn.getAccountInfo(sourceAccount)) {
+      const tokenAmount = await getTokenBalance(sourceAccount);
+      setTokenAmount(tokenAmount);
+    }
+  }
+
+  async function getDailyAmount() {
+    const response = await axios.post('http://localhost:8000/get_daily_amount', { data: {pubkey: wallet?.publicKey.toBase58()}});
+    const amount = response.data.amount;
+    if (amount) {
+      setDailyAmount(amount);
+    }
+  }
+
   async function refresh() {
+    await getOwnerTokenAmount();
     await getPoolData();
+    await getDailyAmount();
   }
 
 	useEffect(() => {
@@ -217,8 +257,8 @@ export default function Stake() {
 
       <hr />
 
-      <hr />
-
+      <h4>{"Today Bought Amount: " + dailyAmount}</h4>
+      <h4>{"Yout Token Amount: " + tokenAmount}</h4>
       <div className="row">
         <div className="col-lg-3">
           <div className="input-group">
@@ -229,7 +269,7 @@ export default function Stake() {
           </div>
         </div>
         <div className="col-lg-3">
-          <button type="button" className="w-100 btn btn-success m-1" onClick={async ()=>{
+          <button type="button" className="w-100 btn btn-primary m-1" onClick={async ()=>{
             setIsWorking(true);
             await buyToken(buyAmount);
             setIsWorking(false);
