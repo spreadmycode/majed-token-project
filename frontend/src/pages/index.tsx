@@ -120,7 +120,7 @@ export default function Stake() {
   }
 
   async function buyToken(amount: number) {
-    if (amount == 0) {
+    if (amount === 0) {
       notify('error', 'Please input correct amount.');
       return;
     }
@@ -138,7 +138,7 @@ export default function Stake() {
   }
 
   async function sellToken(amount : number) {
-    if (amount == 0) {
+    if (amount === 0) {
       notify('error', 'Please input correct amount.');
       return;
     }
