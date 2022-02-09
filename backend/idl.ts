@@ -1,4 +1,5 @@
 export const IDL = 
+
 {
   "version": "0.1.0",
   "name": "solana_anchor",
@@ -22,12 +23,12 @@ export const IDL =
           "isSigner": false
         },
         {
-          "name": "airdropMint",
+          "name": "tokenMint",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "airdropAccount",
+          "name": "tokenAccount",
           "isMut": false,
           "isSigner": false
         },
@@ -43,7 +44,7 @@ export const IDL =
           "type": "u8"
         },
         {
-          "name": "amount",
+          "name": "price",
           "type": "u64"
         }
       ]
@@ -58,16 +59,83 @@ export const IDL =
         },
         {
           "name": "pool",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "price",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "buyToken",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
         },
         {
-          "name": "airdropMint",
+          "name": "pool",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "airdropAccount",
+          "name": "sourceAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "destAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "sellToken",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "wallet",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "pool",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "sourceAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "destAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
           "isMut": false,
           "isSigner": false
         },
@@ -83,73 +151,6 @@ export const IDL =
           "type": "u64"
         }
       ]
-    },
-    {
-      "name": "airdropTransfer",
-      "accounts": [
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "pool",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "sourceAirdropAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "destAirdropAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "airdropMintTo",
-      "accounts": [
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "pool",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "airdropMint",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "destAirdropAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "mintAuthority",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
     }
   ],
   "accounts": [
@@ -167,15 +168,15 @@ export const IDL =
             "type": "publicKey"
           },
           {
-            "name": "airdropMint",
+            "name": "tokenMint",
             "type": "publicKey"
           },
           {
-            "name": "airdropAccount",
+            "name": "tokenAccount",
             "type": "publicKey"
           },
           {
-            "name": "airdropAmount",
+            "name": "tokenPrice",
             "type": "u64"
           },
           {
@@ -211,6 +212,11 @@ export const IDL =
       "code": 6004,
       "name": "InsufficientFunds",
       "msg": "Insufficient Pool Funds"
+    },
+    {
+      "code": 6005,
+      "name": "InvalidOwner",
+      "msg": "You are not Pool owner"
     }
   ]
 };
