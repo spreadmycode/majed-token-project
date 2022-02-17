@@ -23,12 +23,12 @@ async function exportMetadataContent() {
             request(options, (error, response, body) => {
                 if (!error && response.statusCode == 200) {
                     let metadata = JSON.parse(body);
-					metadata.description = metadata.description.replace('2222', '777');
+					metadata.external_url = '';
                     const content = JSON.stringify(metadata);
                     fs.writeFileSync(`./export/${pubkey}.json`, content);
+                    console.log('File index:', index++);
                 }
             });
-            console.log('File index:', index++);
         }
     });
 }
